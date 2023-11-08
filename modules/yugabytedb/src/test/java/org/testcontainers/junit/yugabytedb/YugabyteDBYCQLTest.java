@@ -15,6 +15,8 @@ public class YugabyteDBYCQLTest {
 
     private static final String IMAGE_NAME = "yugabytedb/yugabyte:2.14.4.0-b26";
 
+    private static final String IMAGE_NAME_2_18 = "yugabytedb/yugabyte:2.18.3.0-b75";
+
     private static final DockerImageName YBDB_TEST_IMAGE = DockerImageName.parse(IMAGE_NAME);
 
     @Test
@@ -23,7 +25,7 @@ public class YugabyteDBYCQLTest {
             // creatingYCQLContainer {
             final YugabyteDBYCQLContainer ycqlContainer = new YugabyteDBYCQLContainer(
                 "yugabytedb/yugabyte:2.14.4.0-b26"
-            )
+            ).withPassword("cassandra").withUsername("cassandra")
             // }
         ) {
             // startingYCQLContainer {
@@ -41,6 +43,8 @@ public class YugabyteDBYCQLTest {
         try (
             final YugabyteDBYCQLContainer ycqlContainer = new YugabyteDBYCQLContainer(YBDB_TEST_IMAGE)
                 .withKeyspaceName(key)
+                .withPassword("cassandra")
+                .withUsername("cassandra")
         ) {
             ycqlContainer.start();
             assertThat(
@@ -79,8 +83,8 @@ public class YugabyteDBYCQLTest {
     public void testAuthenticationDisabled() {
         try (
             final YugabyteDBYCQLContainer ycqlContainer = new YugabyteDBYCQLContainer(YBDB_TEST_IMAGE)
-                .withPassword("")
-                .withUsername("")
+                .withPassword("cassandra")
+                .withUsername("cassandra")
         ) {
             ycqlContainer.start();
             assertThat(performQuery(ycqlContainer, "SELECT release_version FROM system.local").wasApplied())
@@ -103,6 +107,14 @@ public class YugabyteDBYCQLTest {
             ResultSet output = performQuery(ycqlContainer, "SELECT greet FROM random.dsql");
             assertThat(output.wasApplied()).as("Statements from a custom script execution succeeds").isTrue();
             assertThat(output.one().getString(0)).as("A record match succeeds").isEqualTo("Hello DSQL");
+        }
+    }
+
+    @Test
+    public void shouldStartWhenContainerIpIsUsedInWaitStrategy() {
+        try (final YugabyteDBYCQLContainer ycqlContainer = new YugabyteDBYCQLContainer(IMAGE_NAME_2_18).withPassword("cassandra").withUsername("cassandra")) {
+            ycqlContainer.start();
+            assertThat(performQuery(ycqlContainer, "SELECT release_version FROM system.local").wasApplied()).isTrue();
         }
     }
 
